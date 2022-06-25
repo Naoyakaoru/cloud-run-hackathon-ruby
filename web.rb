@@ -12,8 +12,9 @@ get '/' do
 end
 
 post '/' do
-  puts JSON.parse(request.body.read)
+  # puts JSON.parse(request.body.read)
 
-  moves = ['F', 'T', 'L', 'R']
-  moves.sample
+  # moves = ['F', 'T', 'L', 'R']
+  # moves.sample
+  "T"
 end
