@@ -13,11 +13,11 @@ end
 
 post '/' do
   me_url = "https://cloud-run-hackathon-ruby-s2t5k4s32a-uc.a.run.app"
-  puts JSON.parse(request.body.read)
+  req_body = JSON.parse(request.body.read)
+  puts req_body
 
   moves = ['F', 'L', 'R']
 
-  req_body = JSON.parse(request.body.read)
   arean_width, arean_height = req_body["arena"]["dims"]
   me_state = req_body["arena"]["state"][me_url]
   puts me_state
