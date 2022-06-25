@@ -26,24 +26,20 @@ post '/' do
 
   dim = case me_state["direction"]
   when "N"
-    axsis = "Y"
     [me_y - 1, me_y - 2, me_y - 3]
   when "S"
-    axsis = "Y"
     [me_y + 1, me_y + 2, me_y + 3]
   when "W"
-    axsis = "X"
     [me_x - 1, me_x - 2, me_x - 3]
   when "E"
-    axsis = "X"
     [me_x + 1, me_x + 2, me_x + 3]
   end
 
   selected = req_body["arena"]["state"].select do |k, v|
-    if axsis "Y"
-      v["x"] == me_x && v["y"].in?(dim)
+    if ["N", "S"].include?(me_state["direction"])
+      v["x"] == me_x && dim.include?(v["y"])
     else
-      v["y"] == me_y && v["x"].in?(dim)
+      v["y"] == me_y && dim.include?(v["x"])
     end
   end
 
