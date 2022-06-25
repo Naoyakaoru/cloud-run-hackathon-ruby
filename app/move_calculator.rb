@@ -7,7 +7,14 @@ class MoveCalculator
     "N" => ["W", "E"],
     "S" => ["E", "W"],
     "W" => ["S", "N"],
-    "N" => ["N", "S"]
+    "E" => ["N", "S"]
+  }
+
+  OPPOSITE = {
+    "N" => "S",
+    "S" => "N",
+    "W" => "E",
+    "E" => "W"
   }
 
   attr_accessor :me
@@ -41,11 +48,11 @@ class MoveCalculator
   end
 
   def turn_and_run
-    enemy_facings = potential_attackers.map { |_k, v| v["direction"] }.uniq
+    enemy_opposite_facings = potential_attackers.map { |_k, v| OPPOSITE[v["direction"]] }.uniq
 
-    if (enemy_facings - ONE_MOVE_TURN[me["direction"]]).empty? && can_move_forward?
+    if (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).empty? && can_move_forward?
       "F"
-    elsif (enemy_facings - ONE_MOVE_TURN[me["direction"]]).include?("R") && can_move_forward?(turn_left)
+    elsif (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).include?(ONE_MOVE_TURN[me["direction"]][0]) && can_move_forward?(turn_left)
       "L"
     else
       "R"
