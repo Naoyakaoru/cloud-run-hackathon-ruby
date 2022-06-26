@@ -1,5 +1,6 @@
 require 'sinatra'
 require './app/move_calculator.rb'
+require 'pry'
 
 $stdout.sync = true
 

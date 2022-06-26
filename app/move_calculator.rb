@@ -105,12 +105,8 @@ class MoveCalculator
   end
 
   def enemy_right_behind?
-    p potential_attackers
-    p potential_attackers.select do |k, v|
-      send("forward_#{v["direction"].downcase}", v["x"], v["y"]) == [me["x"], me["y"]]
-    end
     potential_attackers.select do |k, v|
-      send("forward_#{v["direction"].downcase}", v["x"], v["y"]) == [me["x"], me["y"]]
+      v["direction"] == me["direction"] && send("forward_#{v["direction"].downcase}", v["x"], v["y"]) == [me["x"], me["y"]]
     end.any?
   end
 
