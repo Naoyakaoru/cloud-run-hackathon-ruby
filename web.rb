@@ -13,5 +13,10 @@ get '/' do
 end
 
 post '/' do
-  MoveCalculator.new(JSON.parse(request.body.read)).process
+  log_message("Move", MoveCalculator.new(JSON.parse(request.body.read)).process)
+end
+
+def log_message(description, message)
+  puts "#{description}: #{message}"
+  message
 end

@@ -49,6 +49,9 @@ class MoveCalculator
     return calculate_if_can_attack_in_two_moves[:move] if CALC_TWO && calculate_if_can_attack_in_two_moves[:can_approach]
 
     get_random
+  rescue => e
+    log_message("ERROR", e)
+    get_random
   end
 
   private
@@ -131,10 +134,6 @@ class MoveCalculator
         could_attack(TURN_RIGHT_NEW_DIR[attacker_direction], attacker_x, attacker_y, v["x"], v["y"]) ||
         could_attack(attacker_direction, attacker_x, attacker_y, *one_step_forward(me["direction"], v["x"], v["y"]))
     end
-  end
-
-  def log_message(description, message)
-    puts "#{description}: #{message}"
   end
 
   def get_random
