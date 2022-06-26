@@ -171,6 +171,7 @@ class MoveCalculator
   end
 
   def hitting_target_key
+    return nil if current_preys.empty?
     @_hitting_target_key ||= current_preys.min_by{ |k, v| distance_to_me(v["x"], v["y"]) }[0]
   end
 
