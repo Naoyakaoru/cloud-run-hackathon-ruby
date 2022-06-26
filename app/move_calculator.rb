@@ -136,8 +136,16 @@ class MoveCalculator
 
   def potential_stronger_preys
     @_potential_stronger_preys ||= potential_preys.select do |k, v|
-      v["score"] >= me["score"]
+      v["score"] >= me["score"] && !in_front_of_me(v["x"], v["y"])
     end
+  end
+
+  def in_front_of_me(x, y)
+    [].tap do |arr|
+      arr << send("forward_#{me["direction"].downcase}", me["x"], me["y"])
+      arr << send("forward_#{me["direction"].downcase}", *arr[0])
+      arr << send("forward_#{me["direction"].downcase}", *arr[1])
+    end.include?([x, y])
   end
 
   def calculate_if_can_attack_in_one_move(find_stronger: false)
