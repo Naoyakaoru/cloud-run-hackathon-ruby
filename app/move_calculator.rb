@@ -74,18 +74,20 @@ class MoveCalculator
     # === someone in front / left / right able to hit, or there's no route to run way ===
     # find most empty route and run!
     # if no way to run, hit someone instead
-    if can_move_forward? && !enemy_opposite_facings.include?(me["direction"])
+    if can_move_forward? && !enemy_opposite_facings.include?(me["direction"]) && !enemy_right_behind?
       "F"
     elsif !enemy_opposite_facings.include?(turn_left) && can_move_forward?(turn_left)
       "L"
     elsif !enemy_opposite_facings.include?(turn_right) && can_move_forward?(turn_right)
       "R"
-    elsif can_move_forward?
+    elsif can_move_forward? && !enemy_right_behind?
       "F"
     elsif can_move_forward?(turn_left)
       "L"
     elsif can_move_forward?(turn_right)
       "R"
+    elsif can_move_forward?
+      "F"
     elsif calculate_if_can_attack_in_one_move[:can_attack]
       approach(calculate_if_can_attack_in_one_move[:prey_key])
     elsif can_attack?
@@ -100,6 +102,16 @@ class MoveCalculator
     [*0..(@arena_width - 1)].include?(new_xy[0]) &&
       [*0..(@arena_height - 1)].include?(new_xy[1]) &&
         !@request_body["arena"]["state"].map { |_k, v| [v["x"], v["y"]]}.include?(new_xy)
+  end
+
+  def enemy_right_behind?
+    p potential_attackers
+    p potential_attackers.select do |k, v|
+      send("forward_#{v["direction"].downcase}", v["x"], v["y"]) == [me["x"], me["y"]]
+    end
+    potential_attackers.select do |k, v|
+      send("forward_#{v["direction"].downcase}", v["x"], v["y"]) == [me["x"], me["y"]]
+    end.any?
   end
 
   def could_be_hit?
