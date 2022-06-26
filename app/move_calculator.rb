@@ -1,16 +1,26 @@
 class MoveCalculator
 
+  # strategy settings
+  CALC_TWO = true
+  ATTACK_STRONGERS = true
+
   ME_URL = "https://cloud-run-hackathon-ruby-s2t5k4s32a-uc.a.run.app".freeze
 
-  # DIR => [L, R]
-  ONE_MOVE_TURN = {
-    "N" => ["W", "E"],
-    "S" => ["E", "W"],
-    "W" => ["S", "N"],
-    "E" => ["N", "S"]
+  TURN_LEFT_NEW_DIR = {
+    "N" => "W",
+    "S" => "E",
+    "W" => "S",
+    "E" => "N"
   }
 
-  OPPOSITE = {
+  TURN_RIGHT_NEW_DIR = {
+    "N" => "E",
+    "S" => "W",
+    "W" => "N",
+    "E" => "S"
+  }
+
+  OPPOSITE_DIR = {
     "N" => "S",
     "S" => "N",
     "W" => "E",
@@ -33,10 +43,11 @@ class MoveCalculator
     return attack! if can_attack?
 
     # if can attack within 1 move, move (find smaller score)
-    return approach(calculate_if_can_attack_in_one_move[:pray_key]) if calculate_if_can_attack_in_one_move[:can_attack]
+    return approach(calculate_if_can_attack_in_one_move[:prey_key]) if calculate_if_can_attack_in_one_move[:can_attack]
 
     # if can attack within 2 move, move (find smaller score)
-    #
+    return calculate_if_can_attack_in_two_moves[:move] if CALC_TWO && calculate_if_can_attack_in_two_moves[:can_approach]
+
     get_random
   end
 
@@ -48,11 +59,11 @@ class MoveCalculator
   end
 
   def turn_and_run
-    enemy_opposite_facings = potential_attackers.map { |_k, v| OPPOSITE[v["direction"]] }.uniq
+    enemy_opposite_facings = potential_attackers.map { |_k, v| OPPOSITE_DIR[v["direction"]] }.uniq
 
     if can_move_forward? && !enemy_opposite_facings.include?(me["direction"])
       "F"
-    elsif (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).include?(ONE_MOVE_TURN[me["direction"]][0]) && can_move_forward?(turn_left)
+    elsif !enemy_opposite_facings.include?(TURN_LEFT_NEW_DIR[me["direction"]]) && can_move_forward?(turn_left)
       "L"
     else
       "R"
@@ -60,7 +71,7 @@ class MoveCalculator
   end
 
   def can_move_forward?(direction = me["direction"])
-    new_xy = send(direction.downcase, me["x"], me["y"])
+    new_xy = send("forward_#{direction.downcase}", me["x"], me["y"])
     [*0..(@arena_width - 1)].include?(new_xy[0]) &&
       [*0..(@arena_height - 1)].include?(new_xy[1]) &&
         !@request_body["arena"]["state"].map { |_k, v| [v["x"], v["y"]]}.include?(new_xy)
@@ -88,21 +99,39 @@ class MoveCalculator
 
   def calculate_if_can_attack_in_one_move
     @_calculate_if_can_attack_in_one_move ||= begin
-      prays = @request_body["arena"]["state"].select do |k, v|
-        could_attack(ONE_MOVE_TURN[me["direction"]][0], me["x"], me["y"], v["x"], v["y"]) ||
-          could_attack(ONE_MOVE_TURN[me["direction"]][1], me["x"], me["y"], v["x"], v["y"]) ||
-          could_attack(me["direction"], me["x"], me["y"], *one_step_forward(me["direction"], v["x"], v["y"]))
-      end
-
       {}.tap do |h|
-        h[:can_attack] = prays.any?
-        h[:pray_key] = prays.min_by{|k, v| v["score"]}[0] if h[:can_attack]
+        h[:can_attack] = potential_preys.any?
+        h[:prey_key] = (ATTACK_STRONGERS ? potential_preys.max_by{|k, v| v["score"]}[0] : potential_preys.min_by{|k, v| v["score"]}[0]) if h[:can_attack]
       end
     end
   end
 
-  # def calculate_if_can_attack_in_two_moves
-  # end
+  def calculate_if_can_attack_in_two_moves
+    @_calculate_if_can_attack_in_two_moves ||= begin
+      forward_new_xy = send("forward_#{me["direction"].downcase}", me["x"], me["y"])
+
+      move = if potential_preys(me["direction"], forward_new_xy[0], forward_new_xy[1]).any?
+        "F"
+      elsif potential_preys(TURN_LEFT_NEW_DIR[me["direction"]]).any?
+        "L"
+      elsif potential_preys(TURN_RIGHT_NEW_DIR[me["direction"]]).any?
+        "R"
+      end
+
+      {}.tap do |h|
+        h[:can_approach] = !move.nil?
+        h[:move] = move if h[:can_approach]
+      end
+    end
+  end
+
+  def potential_preys(attacker_direction = me["direction"], attacker_x = me["x"], attacker_y = me["x"])
+    @request_body["arena"]["state"].select do |k, v|
+      could_attack(TURN_LEFT_NEW_DIR[attacker_direction], attacker_x, attacker_y, v["x"], v["y"]) ||
+        could_attack(TURN_RIGHT_NEW_DIR[attacker_direction], attacker_x, attacker_y, v["x"], v["y"]) ||
+        could_attack(attacker_direction, attacker_x, attacker_y, *one_step_forward(me["direction"], v["x"], v["y"]))
+    end
+  end
 
   def log_message(description, message)
     puts "#{description}: #{message}"
@@ -112,7 +141,7 @@ class MoveCalculator
     ['F', 'L', 'R'].sample
   end
 
-  def could_attack(attacker_direction, attacker_x, attacker_y, pray_x, pray_y)
+  def could_attack(attacker_direction, attacker_x, attacker_y, prey_x, prey_y)
     range = case attacker_direction
     when "N"
       [attacker_y - 1, attacker_y - 2, attacker_y - 3]
@@ -125,9 +154,9 @@ class MoveCalculator
     end
 
     if ["N", "S"].include?(attacker_direction)
-      pray_x == attacker_x && range.include?(pray_y)
+      prey_x == attacker_x && range.include?(prey_y)
     else
-      pray_y == attacker_y && range.include?(pray_x)
+      prey_y == attacker_y && range.include?(prey_x)
     end
   end
 
@@ -135,52 +164,52 @@ class MoveCalculator
     "T"
   end
 
-  def one_step_forward(attacker_direction, pray_x, pray_y)
+  def one_step_forward(attacker_direction, prey_x, prey_y)
     range = case attacker_direction
     when "N"
-      [pray_x, pray_y + 1]
+      [prey_x, prey_y + 1]
     when "S"
-      [pray_x, pray_y - 1]
+      [prey_x, prey_y - 1]
     when "W"
-      [pray_x + 1, pray_y]
+      [prey_x + 1, prey_y]
     when "E"
-      [pray_x - 1, pray_y]
+      [prey_x - 1, prey_y]
     end
   end
 
-  def approach(pray_key)
-    pray_state = @request_body["arena"]["state"][pray_key]
+  def approach(prey_key)
+    prey_state = @request_body["arena"]["state"][prey_key]
 
-    if could_attack(ONE_MOVE_TURN[me["direction"]][0], me["x"], me["y"], pray_state["x"], pray_state["y"])
+    if could_attack(TURN_LEFT_NEW_DIR[me["direction"]], me["x"], me["y"], prey_state["x"], prey_state["y"])
       "L"
-    elsif could_attack(ONE_MOVE_TURN[me["direction"]][1], me["x"], me["y"], pray_state["x"], pray_state["y"])
+    elsif could_attack(TURN_RIGHT_NEW_DIR[me["direction"]], me["x"], me["y"], prey_state["x"], prey_state["y"])
       "R"
     else
       "F"
     end
   end
 
-  def n(x, y)
+  def forward_n(x, y)
     [x, y - 1]
   end
 
-  def s(x, y)
+  def forward_s(x, y)
     [x, y + 1]
   end
 
-  def e(x, y)
+  def forward_e(x, y)
     [x + 1, y]
   end
  
-  def w(x, y)
+  def forward_w(x, y)
     [x - 1, y]
   end
 
   def turn_left(original_direction = me["direction"])
-    ONE_MOVE_TURN[original_direction][0]
+    TURN_LEFT_NEW_DIR[original_direction]
   end
 
   def turn_right(original_direction = me["direction"])
-    ONE_MOVE_TURN[original_direction][1]
+    TURN_RIGHT_NEW_DIR[original_direction]
   end
 end

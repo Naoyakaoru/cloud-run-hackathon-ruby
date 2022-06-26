@@ -9,7 +9,7 @@ configure do
 end
 
 get '/' do
-  'Let the battle begin! v.1.1'
+  'Let the battle begin! v.1.2'
 end
 
 post '/' do
