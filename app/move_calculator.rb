@@ -50,7 +50,7 @@ class MoveCalculator
   def turn_and_run
     enemy_opposite_facings = potential_attackers.map { |_k, v| OPPOSITE[v["direction"]] }.uniq
 
-    if (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).empty? && can_move_forward?
+    if (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).empty? || can_move_forward?
       "F"
     elsif (ONE_MOVE_TURN[me["direction"]] - enemy_opposite_facings).include?(ONE_MOVE_TURN[me["direction"]][0]) && can_move_forward?(turn_left)
       "L"
@@ -61,8 +61,8 @@ class MoveCalculator
 
   def can_move_forward?(direction = me["direction"])
     new_xy = send(direction.downcase, me["x"], me["y"])
-    [0..(@arena_width - 1)].include?(new_xy[0]) &&
-      [0..(@arena_height - 1)].include?(new_xy[1]) &&
+    [*0..(@arena_width - 1)].include?(new_xy[0]) &&
+      [*0..(@arena_height - 1)].include?(new_xy[1]) &&
         !potential_attackers.map { |_k, v| [v["x"], v["y"]]}.include?(new_xy)
   end
 
