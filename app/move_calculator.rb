@@ -63,8 +63,9 @@ class MoveCalculator
   private
 
   def set_arena_status
+    me_url = @request_body["_links"]["self"]["href"] || ME_URL
     @arena_width, @arena_height = @request_body["arena"]["dims"]
-    @me = @request_body["arena"]["state"][ME_URL]
+    @me = @request_body["arena"]["state"][me_url]
   end
 
   def turn_and_run
