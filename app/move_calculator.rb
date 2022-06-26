@@ -125,7 +125,7 @@ class MoveCalculator
     end
   end
 
-  def potential_preys(attacker_direction = me["direction"], attacker_x = me["x"], attacker_y = me["x"])
+  def potential_preys(attacker_direction = me["direction"], attacker_x = me["x"], attacker_y = me["y"])
     @request_body["arena"]["state"].select do |k, v|
       could_attack(TURN_LEFT_NEW_DIR[attacker_direction], attacker_x, attacker_y, v["x"], v["y"]) ||
         could_attack(TURN_RIGHT_NEW_DIR[attacker_direction], attacker_x, attacker_y, v["x"], v["y"]) ||
@@ -185,6 +185,7 @@ class MoveCalculator
     elsif could_attack(TURN_RIGHT_NEW_DIR[me["direction"]], me["x"], me["y"], prey_state["x"], prey_state["y"])
       "R"
     else
+      p "3rwer"
       "F"
     end
   end
