@@ -94,10 +94,10 @@ class MoveCalculator
           could_attack(me["direction"], me["x"], me["y"], *one_step_forward(me["direction"], v["x"], v["y"]))
       end
 
-      {
-        can_attack: prays.any?,
-        pray_key: prays.min_by{|k, v| v["score"]}[0]
-      }
+      {}.tap do |h|
+        h[:can_attack] = prays.any?
+        h[:pray_key] = prays.min_by{|k, v| v["score"]}[0] if h[:can_attack]
+      end
     end
   end
 
