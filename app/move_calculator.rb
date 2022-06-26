@@ -199,10 +199,6 @@ class MoveCalculator
     (x - me["x"]).abs + (y - me["y"]).abs
   end
 
-  def log_message(description, message)
-    puts "#{description}: #{message}"
-  end
-
   def get_random
     ['F', 'L', 'R'].sample
   end
