@@ -185,7 +185,6 @@ class MoveCalculator
     elsif could_attack(TURN_RIGHT_NEW_DIR[me["direction"]], me["x"], me["y"], prey_state["x"], prey_state["y"])
       "R"
     else
-      p "3rwer"
       "F"
     end
   end
