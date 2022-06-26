@@ -55,6 +55,9 @@ class MoveCalculator
     return calculate_if_can_attack_in_two_moves[:move] if CALC_TWO && calculate_if_can_attack_in_two_moves[:can_approach]
 
     get_random
+  rescue => e
+    log_message("ERROR", e)
+    get_random
   end
 
   private
