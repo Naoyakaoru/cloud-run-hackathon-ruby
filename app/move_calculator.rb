@@ -44,7 +44,7 @@ class MoveCalculator
     return turn_and_run if was_hit? && could_be_hit?
 
     # if I am not hitting anyone score higher than me and anyone score higher than me is with one move, move to it and prepare to attack
-    return approach(calculate_if_can_attack_in_one_move(find_stronger: true)[:prey_key]) if PRIO_STRONGERS_WITHIN_ONE_MOVE && (hitting_target.any? && hitting_target["score"] < me["score"]) && potential_stronger_preys.any?
+    return approach(calculate_if_can_attack_in_one_move(find_stronger: true)[:prey_key]) if PRIO_STRONGERS_WITHIN_ONE_MOVE && (hitting_target_key && hitting_target["score"] < me["score"]) && potential_stronger_preys.any?
 
     return attack! if can_attack?
 
@@ -127,7 +127,7 @@ class MoveCalculator
   end
 
   def potential_stronger_preys
-    @_potential_stronger_preys ||= potential_preys.select |k, v| do
+    @_potential_stronger_preys ||= potential_preys.select do |k, v|
       v["score"] >= me["score"]
     end
   end
@@ -170,8 +170,12 @@ class MoveCalculator
     end
   end
 
+  def hitting_target_key
+    @_hitting_target_key ||= current_preys.min_by{ |k, v| distance_to_me(v["x"], v["y"]) }
+  end
+
   def hitting_target
-    @_hitting_target ||= current_preys.min_by{|k, v| distance_to_me(v["x"], v["y"]) }
+    @_hitting_target ||= @request_body["arena"]["state"][hitting_target_key]
   end
 
   def distance_to_me(x, y)
