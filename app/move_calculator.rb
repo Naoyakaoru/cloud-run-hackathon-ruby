@@ -3,6 +3,7 @@ class MoveCalculator
   # strategy settings
   CALC_TWO = true
   ATTACK_STRONGERS = true
+  PRIO_STRONGERS_WITHIN_ONE_MOVE = true
 
   ME_URL = "https://cloud-run-hackathon-ruby-s2t5k4s32a-uc.a.run.app".freeze
 
@@ -39,7 +40,12 @@ class MoveCalculator
     set_arena_status
     log_message("My State", me)
 
-    return turn_and_run if could_be_hit? && was_hit?
+    # run away if hit and check if anyone could still hit
+    return turn_and_run if was_hit? && could_be_hit?
+
+    # if I am not hitting anyone score higher than me and anyone score higher than me is with one move, move to it and prepare to attack
+    return approach(calculate_if_can_attack_in_one_move(find_stronger: true)[:prey_key]) if PRIO_STRONGERS_WITHIN_ONE_MOVE && (hitting_target.any? && hitting_target["score"] < me["score"]) && potential_stronger_preys.any?
+
     return attack! if can_attack?
 
     # if can attack within 1 move, move (find smaller score)
@@ -61,12 +67,31 @@ class MoveCalculator
   def turn_and_run
     enemy_opposite_facings = potential_attackers.map { |_k, v| OPPOSITE_DIR[v["direction"]] }.uniq
 
+    # if can move forward and no one if front is able to attack me, go forward
+    # if no one in left is able to attack me, and there's route to run away, turn left first
+    # if no one in right is able to attack me, and there's route to run away, turn right first
+
+    # === someone in front / left / right able to hit, or there's no route to run way ===
+    # find most empty route and run!
+    # if no way to run, hit someone instead
     if can_move_forward? && !enemy_opposite_facings.include?(me["direction"])
       "F"
-    elsif !enemy_opposite_facings.include?(TURN_LEFT_NEW_DIR[me["direction"]]) && can_move_forward?(turn_left)
+    elsif !enemy_opposite_facings.include?(turn_left) && can_move_forward?(turn_left)
       "L"
-    else
+    elsif !enemy_opposite_facings.include?(turn_right) && can_move_forward?(turn_right)
       "R"
+    elsif can_move_forward?
+      "F"
+    elsif can_move_forward?(turn_left)
+      "L"
+    elsif can_move_forward?(turn_right)
+      "R"
+    elsif calculate_if_can_attack_in_one_move[:can_attack]
+      approach(calculate_if_can_attack_in_one_move[:prey_key])
+    elsif can_attack?
+      attack!
+    else
+      get_random
     end
   end
 
@@ -86,9 +111,13 @@ class MoveCalculator
   end
 
   def can_attack?
-    @request_body["arena"]["state"].select do |k, v|
+    current_preys.any?
+  end
+
+  def current_preys
+    @_current_preys ||= @request_body["arena"]["state"].select do |k, v|
       could_attack(me["direction"], me["x"], me["y"], v["x"], v["y"])
-    end.any?
+    end
   end
 
   def potential_attackers
@@ -97,7 +126,15 @@ class MoveCalculator
     end
   end
 
-  def calculate_if_can_attack_in_one_move
+  def potential_stronger_preys
+    @_potential_stronger_preys ||= potential_preys.select |k, v| do
+      v["score"] >= me["score"]
+    end
+  end
+
+  def calculate_if_can_attack_in_one_move(find_stronger: false)
+    return { prey_key: potential_stronger_preys.max_by{|k, v| v["score"]}[0] } if find_stronger
+
     @_calculate_if_can_attack_in_one_move ||= begin
       {}.tap do |h|
         h[:can_attack] = potential_preys.any?
@@ -133,6 +170,14 @@ class MoveCalculator
     end
   end
 
+  def hitting_target
+    @_hitting_target ||= current_preys.min_by{|k, v| distance_to_me(v["x"], v["y"]) }
+  end
+
+  def distance_to_me(x, y)
+    (x - me["x"]).abs + (y - me["y"]).abs
+  end
+
   def log_message(description, message)
     puts "#{description}: #{message}"
   end
@@ -142,21 +187,19 @@ class MoveCalculator
   end
 
   def could_attack(attacker_direction, attacker_x, attacker_y, prey_x, prey_y)
-    range = case attacker_direction
-    when "N"
-      [attacker_y - 1, attacker_y - 2, attacker_y - 3]
-    when "S"
-      [attacker_y + 1, attacker_y + 2, attacker_y + 3]
-    when "W"
-      [attacker_x - 1, attacker_x - 2, attacker_x - 3]
-    when "E"
-      [attacker_x + 1, attacker_x + 2, attacker_x + 3]
-    end
+    attacker_hit_ranges(attacker_direction, attacker_x, attacker_y).include?([prey_x, prey_y])
+  end
 
-    if ["N", "S"].include?(attacker_direction)
-      prey_x == attacker_x && range.include?(prey_y)
-    else
-      prey_y == attacker_y && range.include?(prey_x)
+  def attacker_hit_ranges(attacker_direction, attacker_x, attacker_y)
+    case attacker_direction
+    when "N"
+      [[attacker_x, attacker_y - 1], [attacker_x, attacker_y - 2], [attacker_x, attacker_y - 3]]
+    when "S"
+      [[attacker_x, attacker_y + 1], [attacker_x, attacker_y + 2], [attacker_x, attacker_y + 3]]
+    when "W"
+      [[attacker_x - 1, attacker_y], [attacker_x - 2, attacker_y], [attacker_x - 3, attacker_y]]
+    when "E"
+      [[attacker_x + 1, attacker_y], [attacker_x + 2, attacker_y], [attacker_x + 3, attacker_y]]
     end
   end
 
