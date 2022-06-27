@@ -2,8 +2,8 @@ class MoveCalculator
 
   # strategy settings
   CALC_TWO = true
-  ATTACK_STRONGERS = true
-  PRIO_STRONGERS_WITHIN_ONE_MOVE = true
+  ATTACK_STRONGERS = false
+  PRIO_STRONGERS_WITHIN_ONE_MOVE = false
 
   ME_URL = "https://cloud-run-hackathon-ruby-s2t5k4s32a-uc.a.run.app".freeze
 
