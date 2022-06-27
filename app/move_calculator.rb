@@ -80,9 +80,9 @@ class MoveCalculator
     # if no way to run, hit someone instead
     if can_move_forward? && !enemy_opposite_facings.include?(me["direction"]) && !enemy_right_behind?
       "F"
-    elsif !enemy_opposite_facings.include?(turn_left) && can_move_forward?(turn_left)
+    elsif !enemy_opposite_facings.include?(turn_left) && can_move_forward?(turn_left) && $last_move != "R"
       "L"
-    elsif !enemy_opposite_facings.include?(turn_right) && can_move_forward?(turn_right)
+    elsif !enemy_opposite_facings.include?(turn_right) && can_move_forward?(turn_right) && $last_move != "L"
       "R"
     elsif can_move_forward? && !enemy_right_behind?
       "F"
@@ -92,10 +92,12 @@ class MoveCalculator
       "R"
     elsif can_move_forward?
       "F"
-    elsif calculate_if_can_attack_in_one_move[:can_attack]
-      approach(calculate_if_can_attack_in_one_move[:prey_key])
+    elsif can_move_forward?(turn_back)
+      ["L", "R"].sample
     elsif can_attack?
       attack!
+    elsif calculate_if_can_attack_in_one_move[:can_attack]
+      approach(calculate_if_can_attack_in_one_move[:prey_key])
     else
       get_random
     end
@@ -275,5 +277,9 @@ class MoveCalculator
 
   def turn_right(original_direction = me["direction"])
     TURN_RIGHT_NEW_DIR[original_direction]
+  end
+
+  def turn_back
+    turn_right(turn_right)
   end
 end

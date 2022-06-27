@@ -14,7 +14,7 @@ get '/' do
 end
 
 post '/' do
-  log_message("Move", MoveCalculator.new(JSON.parse(request.body.read)).process)
+  $last_move = log_message("Move", MoveCalculator.new(JSON.parse(request.body.read)).process)
 end
 
 def log_message(description, message)
